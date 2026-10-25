@@ -4,6 +4,8 @@ export interface MatterControllerConfig extends NodeRedDef {
     storagePath: string;
     port: string;
     logLevel: string;
+    tlvs: string;
+    threadNetworkName: string;
 }
 /** Extended Node-RED node that exposes the ControllerManager to sibling nodes. */
 export interface MatterControllerNode extends NodeRedNode {

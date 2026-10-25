@@ -372,13 +372,15 @@ export class ControllerManager {
     private readonly storagePath: string,
     private readonly port: number,
     private readonly logLevel: string = "Info",
+    private readonly tlvs: string,
+    private readonly threadNetworkName: string,
   ) {}
 
   // ----------- Singleton access ------------------------------------------
 
-  static getInstance(storagePath: string, port: number, logLevel = "Info"): ControllerManager {
+  static getInstance(storagePath: string, port: number, logLevel = "Info", tlvs: string, threadNetworkName: string): ControllerManager {
     if (!instances.has(storagePath)) {
-      instances.set(storagePath, new ControllerManager(storagePath, port, logLevel));
+      instances.set(storagePath, new ControllerManager(storagePath, port, logLevel, tlvs, threadNetworkName));
     } else {
       // Apply log level even if instance already exists (e.g. after hot-redeploy)
       instances.get(storagePath)!.applyLogLevel(logLevel);
@@ -649,7 +651,7 @@ export class ControllerManager {
 
     // «NodeCommissioningOptions» is not re-exported from the device sub-path;
     // we let TypeScript infer it from the commissionNode() overload.
-    const options: Record<string, unknown> = {
+    const options: Record<string, any> = {
       discovery: {
         identifierData: { shortDiscriminator },
         discoveryCapabilities: { onIpNetwork: true },
@@ -664,6 +666,14 @@ export class ControllerManager {
         regulatoryCountryCode: "XX",
       },
     };
+
+    if (this.threadNetworkName && this.tlvs) {
+      options.discovery.discoveryCapabilities.ble = true
+      options.commissioning.threadNetwork = {
+          networkName: this.threadNetworkName,
+        operationalDataset: this.tlvs
+      }
+    }
 
     const nodeId = await ctrl.commissionNode(options as never);
     const nodeIdStr = nodeId.toString();

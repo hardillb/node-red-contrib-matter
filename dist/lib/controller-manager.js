@@ -130,6 +130,8 @@ class ControllerManager {
     storagePath;
     port;
     logLevel;
+    tlvs;
+    threadNetworkName;
     controller;
     started = false;
     /** If start() is already in progress, all concurrent callers await this same promise. */
@@ -241,15 +243,17 @@ class ControllerManager {
     /** Persisted registry of commissioned devices with their discovery data */
     registry = {};
     registryPath = "";
-    constructor(storagePath, port, logLevel = "Info") {
+    constructor(storagePath, port, logLevel = "Info", tlvs, threadNetworkName) {
         this.storagePath = storagePath;
         this.port = port;
         this.logLevel = logLevel;
+        this.tlvs = tlvs;
+        this.threadNetworkName = threadNetworkName;
     }
     // ----------- Singleton access ------------------------------------------
-    static getInstance(storagePath, port, logLevel = "Info") {
+    static getInstance(storagePath, port, logLevel = "Info", tlvs, threadNetworkName) {
         if (!instances.has(storagePath)) {
-            instances.set(storagePath, new ControllerManager(storagePath, port, logLevel));
+            instances.set(storagePath, new ControllerManager(storagePath, port, logLevel, tlvs, threadNetworkName));
         }
         else {
             // Apply log level even if instance already exists (e.g. after hot-redeploy)
@@ -508,6 +512,13 @@ class ControllerManager {
                 regulatoryCountryCode: "XX",
             },
         };
+        if (this.threadNetworkName && this.tlvs) {
+            options.discovery.discoveryCapabilities.ble = true;
+            options.commissioning.threadNetwork = {
+                networkName: this.threadNetworkName,
+                operationalDataset: this.tlvs
+            };
+        }
         const nodeId = await ctrl.commissionNode(options);
         const nodeIdStr = nodeId.toString();
         logger.info(`Commissioned node: ${nodeIdStr}`);
