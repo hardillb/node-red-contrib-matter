@@ -356,9 +356,9 @@ class ControllerManager {
         // level from the first log call. This was previously a dead config option.
         this.applyLogLevel(this.logLevel);
         // Loaded here (not at module top level) so Boot.init fires after
-        // environment configuration. Uses file storage — the @matter/nodejs@0.17.0
-        // SQLite driver has a concurrency bug (nested BEGIN TRANSACTION when
-        // multiple devices connect simultaneously) so we stay on file storage.
+        // environment configuration. Uses file storage — the @matter/nodejs@0.18.0
+        // SQLite driver rejects nested BEGIN TRANSACTION calls, so we stay on file
+        // storage to avoid concurrent device connections colliding on a transaction.
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("@matter/nodejs");
         // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -491,8 +491,6 @@ class ControllerManager {
         await this.start();
         const ctrl = this.requireController();
         const { shortDiscriminator, passcode } = types_1.ManualPairingCodeCodec.decode(pairingCode);
-        // «NodeCommissioningOptions» is not re-exported from the device sub-path;
-        // we let TypeScript infer it from the commissionNode() overload.
         const options = {
             discovery: {
                 identifierData: { shortDiscriminator },
@@ -1044,11 +1042,10 @@ class ControllerManager {
     /**
      * Subscribes to all attributes and events on the device.
      *
-     * NOTE: In matter.js 0.17, `subscribeAllAttributesAndEvents()` ignores passed
-     * callbacks and does nothing when `autoSubscribe=false` (the underscore prefix
-     * on `_options` marks the parameter as intentionally unused). We therefore use
-     * `subscribeMultipleAttributesAndEvents` with wildcard paths (empty objects =
-     * all endpoints/clusters) so the same proven code path handles both modes.
+     * The legacy `subscribeAllAttributesAndEvents()` ignores its callback options
+     * and is deprecated for removal in 0.19. Use the interaction client directly
+     * so our callbacks are registered explicitly and wildcard paths can cover all
+     * endpoints and clusters.
      */
     async activateFullSubscription(nodeIdStr, node) {
         // getInteractionClient() returns the private field set at construction time
