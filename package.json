@@ -46,6 +46,9 @@
     "@project-chip/matter.js": "^0.17.7",
     "typescript": "^5.4.0"
   },
+  "optionalDependencies": {
+        "@matter/nodejs-ble": "0.17.0"
+    },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
