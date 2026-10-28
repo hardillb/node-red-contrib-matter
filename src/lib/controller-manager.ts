@@ -10,7 +10,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { readdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { CommissioningController } from "@project-chip/matter.js";
+import { CommissioningController, type NodeCommissioningOptions } from "@project-chip/matter.js";
 import { NodeStates } from "@project-chip/matter.js/device";
 import type { CommissioningControllerNodeOptions, PairedNode } from "@project-chip/matter.js/device";
 import { Logger, LogLevel } from "@matter/general";
@@ -501,9 +501,9 @@ export class ControllerManager {
     this.applyLogLevel(this.logLevel);
 
     // Loaded here (not at module top level) so Boot.init fires after
-    // environment configuration. Uses file storage — the @matter/nodejs@0.17.0
-    // SQLite driver has a concurrency bug (nested BEGIN TRANSACTION when
-    // multiple devices connect simultaneously) so we stay on file storage.
+    // environment configuration. Uses file storage — the @matter/nodejs@0.18.0
+    // SQLite driver rejects nested BEGIN TRANSACTION calls, so we stay on file
+    // storage to avoid concurrent device connections colliding on a transaction.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("@matter/nodejs");
 
@@ -647,9 +647,7 @@ export class ControllerManager {
 
     const { shortDiscriminator, passcode } = ManualPairingCodeCodec.decode(pairingCode);
 
-    // «NodeCommissioningOptions» is not re-exported from the device sub-path;
-    // we let TypeScript infer it from the commissionNode() overload.
-    const options: Record<string, unknown> = {
+    const options: NodeCommissioningOptions = {
       discovery: {
         identifierData: { shortDiscriminator },
         discoveryCapabilities: { onIpNetwork: true },
@@ -660,12 +658,12 @@ export class ControllerManager {
       passcode,
       commissioning: {
         // 2 = IndoorOutdoor — most permissive regulatory location
-        regulatoryLocation: 2 as never,
+        regulatoryLocation: 2,
         regulatoryCountryCode: "XX",
       },
     };
 
-    const nodeId = await ctrl.commissionNode(options as never);
+    const nodeId = await ctrl.commissionNode(options);
     const nodeIdStr = nodeId.toString();
     logger.info(`Commissioned node: ${nodeIdStr}`);
 
@@ -1264,11 +1262,10 @@ export class ControllerManager {
   /**
    * Subscribes to all attributes and events on the device.
    *
-   * NOTE: In matter.js 0.17, `subscribeAllAttributesAndEvents()` ignores passed
-   * callbacks and does nothing when `autoSubscribe=false` (the underscore prefix
-   * on `_options` marks the parameter as intentionally unused). We therefore use
-   * `subscribeMultipleAttributesAndEvents` with wildcard paths (empty objects =
-   * all endpoints/clusters) so the same proven code path handles both modes.
+   * The legacy `subscribeAllAttributesAndEvents()` ignores its callback options
+   * and is deprecated for removal in 0.19. Use the interaction client directly
+   * so our callbacks are registered explicitly and wildcard paths can cover all
+   * endpoints and clusters.
    */
   private async activateFullSubscription(nodeIdStr: string, node: PairedNode): Promise<void> {
     // getInteractionClient() returns the private field set at construction time

@@ -326,11 +326,10 @@ export declare class ControllerManager {
     /**
      * Subscribes to all attributes and events on the device.
      *
-     * NOTE: In matter.js 0.17, `subscribeAllAttributesAndEvents()` ignores passed
-     * callbacks and does nothing when `autoSubscribe=false` (the underscore prefix
-     * on `_options` marks the parameter as intentionally unused). We therefore use
-     * `subscribeMultipleAttributesAndEvents` with wildcard paths (empty objects =
-     * all endpoints/clusters) so the same proven code path handles both modes.
+     * The legacy `subscribeAllAttributesAndEvents()` ignores its callback options
+     * and is deprecated for removal in 0.19. Use the interaction client directly
+     * so our callbacks are registered explicitly and wildcard paths can cover all
+     * endpoints and clusters.
      */
     private activateFullSubscription;
     /**

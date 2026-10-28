@@ -40,10 +40,10 @@
     }
   },
   "dependencies": {
-    "@matter/general": "^0.17.7",
-    "@matter/nodejs": "^0.17.7",
-    "@matter/types": "^0.17.7",
-    "@project-chip/matter.js": "^0.17.7",
+    "@matter/general": "^0.18.0",
+    "@matter/nodejs": "^0.18.0",
+    "@matter/types": "^0.18.0",
+    "@project-chip/matter.js": "^0.18.0",
     "typescript": "^5.4.0"
   },
   "devDependencies": {
