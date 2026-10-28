@@ -514,12 +514,14 @@ class ControllerManager {
                 regulatoryLocation: 2,
                 regulatoryCountryCode: "XX",
                 ...((this.threadNetworkName && this.tlvs) ? {
-                    networkName: this.threadNetworkName,
-                    operationalDataset: this.tlvs,
+                    threadNetwork: {
+                        networkName: this.threadNetworkName,
+                        operationalDataset: this.tlvs,
+                    }
                 } : {}),
             },
         };
-        console.log('######BEN######', JSON.stringify(options));
+        console.log('######BEN######', JSON.stringify(options, null, 2));
         const nodeId = await ctrl.commissionNode(options);
         const nodeIdStr = nodeId.toString();
         logger.info(`Commissioned node: ${nodeIdStr}`);
