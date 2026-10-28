@@ -513,6 +513,7 @@ export class ControllerManager {
     const { Environment } = require("@matter/general") as typeof import("@matter/general");
     const env = Environment.default;
     env.vars.set("storage.path", this.storagePath);
+    env.vars.set("ble.enable", true)
 
     // Tune Thread network profile: halve concurrent CASE exchanges (4→2) and
     // increase inter-exchange gap (100ms→250ms). Each open exchange holds crypto
