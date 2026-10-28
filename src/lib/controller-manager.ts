@@ -674,6 +674,8 @@ export class ControllerManager {
       },
     };
 
+    console.log('######BEN######', JSON.stringify(options))
+
     const nodeId = await ctrl.commissionNode(options);
     const nodeIdStr = nodeId.toString();
     logger.info(`Commissioned node: ${nodeIdStr}`);

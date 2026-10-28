@@ -33,6 +33,14 @@ Built on [matter.js](https://github.com/project-chip/matter.js).
 | Node.js | ≥ 20.0.0 |
 | Node-RED | ≥ 3.0.0 |
 
+To use BLE to provision Thread based devices you will need to allow the NodeJS binary to access the Bluetooth radio.
+
+On Linux you will need to run the following command
+
+```bash
+sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)
+```
+
 ---
 
 ## Installation
