@@ -15,6 +15,7 @@ import { NodeStates } from "@project-chip/matter.js/device";
 import type { CommissioningControllerNodeOptions, PairedNode } from "@project-chip/matter.js/device";
 import { Logger, LogLevel } from "@matter/general";
 import { ClusterId, EndpointNumber, ManualPairingCodeCodec, NodeId } from "@matter/types";
+import "@matter/nodejs-ble";
 
 const logger = Logger.get("ControllerManager");
 
@@ -372,13 +373,15 @@ export class ControllerManager {
     private readonly storagePath: string,
     private readonly port: number,
     private readonly logLevel: string = "Info",
+    private readonly tlvs: string,
+    private readonly threadNetworkName: string,
   ) {}
 
   // ----------- Singleton access ------------------------------------------
 
-  static getInstance(storagePath: string, port: number, logLevel = "Info"): ControllerManager {
+  static getInstance(storagePath: string, port: number, logLevel = "Info", tlvs: string, threadNetworkName: string): ControllerManager {
     if (!instances.has(storagePath)) {
-      instances.set(storagePath, new ControllerManager(storagePath, port, logLevel));
+      instances.set(storagePath, new ControllerManager(storagePath, port, logLevel, tlvs, threadNetworkName));
     } else {
       // Apply log level even if instance already exists (e.g. after hot-redeploy)
       instances.get(storagePath)!.applyLogLevel(logLevel);
@@ -511,6 +514,7 @@ export class ControllerManager {
     const { Environment } = require("@matter/general") as typeof import("@matter/general");
     const env = Environment.default;
     env.vars.set("storage.path", this.storagePath);
+    env.vars.set("ble.enable", true)
 
     // Tune Thread network profile: halve concurrent CASE exchanges (4→2) and
     // increase inter-exchange gap (100ms→250ms). Each open exchange holds crypto
@@ -650,7 +654,10 @@ export class ControllerManager {
     const options: NodeCommissioningOptions = {
       discovery: {
         identifierData: { shortDiscriminator },
-        discoveryCapabilities: { onIpNetwork: true },
+        discoveryCapabilities: {
+          onIpNetwork: true,
+          ...((this.threadNetworkName && this.tlvs) ? { ble: true } : {}),
+        },
         ...(knownAddress
           ? { knownAddress: { ip: knownAddress, port: 5540, type: "udp" } }
           : {}),
@@ -660,6 +667,10 @@ export class ControllerManager {
         // 2 = IndoorOutdoor — most permissive regulatory location
         regulatoryLocation: 2,
         regulatoryCountryCode: "XX",
+        ...((this.threadNetworkName && this.tlvs) ? {
+          networkName: this.threadNetworkName, 
+          operationalDataset: this.tlvs,
+        } : {} ),
       },
     };
 

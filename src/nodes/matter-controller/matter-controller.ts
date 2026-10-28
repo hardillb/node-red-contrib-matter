@@ -5,6 +5,8 @@ export interface MatterControllerConfig extends NodeRedDef {
   storagePath: string;
   port: string;
   logLevel: string;
+  tlvs: string;
+  threadNetworkName: string
 }
 
 /** Extended Node-RED node that exposes the ControllerManager to sibling nodes. */
@@ -89,8 +91,10 @@ module.exports = function (RED: NodeRedAPI) {
     const storagePath = config.storagePath || `${process.env["HOME"]}/.node-red-matter`;
     const port = parseInt(config.port, 10) || 5540;
     const logLevel = config.logLevel || "Info";
+    const tlvs = config.tlvs;
+    const threadNetworkName = config.threadNetworkName
 
-    this.manager = ControllerManager.getInstance(storagePath, port, logLevel);
+    this.manager = ControllerManager.getInstance(storagePath, port, logLevel, tlvs, threadNetworkName);
 
     this.manager.start().then(() => {
       this.log(`Matter controller ready — storage: ${storagePath}`);

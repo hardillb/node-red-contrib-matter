@@ -6,6 +6,7 @@
  * after environment configuration is applied.
  */
 import type { PairedNode } from "@project-chip/matter.js/device";
+import "@matter/nodejs-ble";
 export interface ClusterInfo {
     clusterId: number;
     clusterIdHex: string;
@@ -94,6 +95,8 @@ export declare class ControllerManager {
     private readonly storagePath;
     private readonly port;
     private readonly logLevel;
+    private readonly tlvs;
+    private readonly threadNetworkName;
     private controller?;
     private started;
     /** If start() is already in progress, all concurrent callers await this same promise. */
@@ -188,7 +191,7 @@ export declare class ControllerManager {
     private registry;
     private registryPath;
     private constructor();
-    static getInstance(storagePath: string, port: number, logLevel?: string): ControllerManager;
+    static getInstance(storagePath: string, port: number, logLevel: string | undefined, tlvs: string, threadNetworkName: string): ControllerManager;
     static removeInstance(storagePath: string): void;
     private applyLogLevel;
     /**

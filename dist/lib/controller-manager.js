@@ -15,6 +15,7 @@ const matter_js_1 = require("@project-chip/matter.js");
 const device_1 = require("@project-chip/matter.js/device");
 const general_1 = require("@matter/general");
 const types_1 = require("@matter/types");
+require("@matter/nodejs-ble");
 const logger = general_1.Logger.get("ControllerManager");
 // Well-known Matter cluster ID → human-readable name map
 const CLUSTER_NAMES = {
@@ -130,6 +131,8 @@ class ControllerManager {
     storagePath;
     port;
     logLevel;
+    tlvs;
+    threadNetworkName;
     controller;
     started = false;
     /** If start() is already in progress, all concurrent callers await this same promise. */
@@ -241,15 +244,17 @@ class ControllerManager {
     /** Persisted registry of commissioned devices with their discovery data */
     registry = {};
     registryPath = "";
-    constructor(storagePath, port, logLevel = "Info") {
+    constructor(storagePath, port, logLevel = "Info", tlvs, threadNetworkName) {
         this.storagePath = storagePath;
         this.port = port;
         this.logLevel = logLevel;
+        this.tlvs = tlvs;
+        this.threadNetworkName = threadNetworkName;
     }
     // ----------- Singleton access ------------------------------------------
-    static getInstance(storagePath, port, logLevel = "Info") {
+    static getInstance(storagePath, port, logLevel = "Info", tlvs, threadNetworkName) {
         if (!instances.has(storagePath)) {
-            instances.set(storagePath, new ControllerManager(storagePath, port, logLevel));
+            instances.set(storagePath, new ControllerManager(storagePath, port, logLevel, tlvs, threadNetworkName));
         }
         else {
             // Apply log level even if instance already exists (e.g. after hot-redeploy)
@@ -365,6 +370,7 @@ class ControllerManager {
         const { Environment } = require("@matter/general");
         const env = Environment.default;
         env.vars.set("storage.path", this.storagePath);
+        env.vars.set("ble.enable", true);
         // Tune Thread network profile: halve concurrent CASE exchanges (4→2) and
         // increase inter-exchange gap (100ms→250ms). Each open exchange holds crypto
         // state in RAM; tighter limits cut peak memory during the startup subscription
@@ -494,7 +500,10 @@ class ControllerManager {
         const options = {
             discovery: {
                 identifierData: { shortDiscriminator },
-                discoveryCapabilities: { onIpNetwork: true },
+                discoveryCapabilities: {
+                    onIpNetwork: true,
+                    ...((this.threadNetworkName && this.tlvs) ? { ble: true } : {}),
+                },
                 ...(knownAddress
                     ? { knownAddress: { ip: knownAddress, port: 5540, type: "udp" } }
                     : {}),
@@ -504,6 +513,10 @@ class ControllerManager {
                 // 2 = IndoorOutdoor — most permissive regulatory location
                 regulatoryLocation: 2,
                 regulatoryCountryCode: "XX",
+                ...((this.threadNetworkName && this.tlvs) ? {
+                    networkName: this.threadNetworkName,
+                    operationalDataset: this.tlvs,
+                } : {}),
             },
         };
         const nodeId = await ctrl.commissionNode(options);
